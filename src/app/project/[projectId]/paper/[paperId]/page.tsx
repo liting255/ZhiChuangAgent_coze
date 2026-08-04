@@ -4,7 +4,6 @@ import { useParams } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, ExternalLink, BookOpen, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -77,9 +76,9 @@ export default function PaperDetailPage() {
     return (
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-slate-200 rounded w-3/4" />
-          <div className="h-4 bg-slate-100 rounded w-1/2" />
-          <div className="h-32 bg-slate-100 rounded" />
+          <div className="h-8 bg-[#F8F9FA] rounded-xl w-3/4" />
+          <div className="h-4 bg-[#F8F9FA] rounded-xl w-1/2" />
+          <div className="h-32 bg-[#F8F9FA] rounded-xl" />
         </div>
       </div>
     );
@@ -88,7 +87,7 @@ export default function PaperDetailPage() {
   if (!paper) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-8 text-center">
-        <p className="text-slate-500">文献不存在</p>
+        <p className="text-[#5F6368]">文献不存在</p>
       </div>
     );
   }
@@ -98,42 +97,42 @@ export default function PaperDetailPage() {
       {/* Back */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900 mb-4"
+        className="flex items-center gap-1 text-sm text-[#5F6368] hover:text-[#202124] mb-6 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" /> 返回
       </button>
 
       {/* Title & Meta */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant="outline" className={
+        <div className="flex items-center gap-2 mb-3">
+          <Badge variant="outline" className={`rounded-full text-[10px] ${
             paper.triage_level === "priority_read" ? "border-red-200 text-red-700 bg-red-50" :
             paper.triage_level === "quick_browse" ? "border-amber-200 text-amber-700 bg-amber-50" :
-            "border-slate-200 text-slate-500 bg-slate-50"
-          }>
+            "border-[#DADCE0] text-[#5F6368] bg-slate-50"
+          }`}>
             {paper.triage_level === "priority_read" ? "优先精读" : paper.triage_level === "quick_browse" ? "快速浏览" : "暂不纳入"}
           </Badge>
           {paper.confidence === "low" && (
-            <Badge variant="outline" className="border-red-300 text-red-700 bg-red-50">
+            <Badge variant="outline" className="rounded-full border-red-300 text-red-700 bg-red-50 text-[10px]">
               <AlertTriangle className="h-3 w-3 mr-1" /> 低置信度
             </Badge>
           )}
           {paper.human_confirmed && (
-            <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">已人工确认</Badge>
+            <Badge variant="outline" className="rounded-full border-green-300 text-green-700 bg-green-50 text-[10px]">已人工确认</Badge>
           )}
         </div>
-        <h1 className="text-lg font-semibold text-slate-900 mb-2">{paper.title}</h1>
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+        <h1 className="text-lg font-medium text-[#202124] mb-2 leading-snug">{paper.title}</h1>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-[#5F6368]">
           <span>来源: {paper.source}</span>
           <span>相关性: {paper.relevance_score}</span>
           <span>质量: {paper.quality_score}</span>
           {paper.doi && (
-            <a href={paper.doi} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-0.5">
+            <a href={paper.doi} target="_blank" rel="noopener noreferrer" className="text-[#1a73e8] hover:underline flex items-center gap-0.5">
               DOI <ExternalLink className="h-3 w-3" />
             </a>
           )}
           {paper.url && (
-            <a href={paper.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-0.5">
+            <a href={paper.url} target="_blank" rel="noopener noreferrer" className="text-[#1a73e8] hover:underline flex items-center gap-0.5">
               原文链接 <ExternalLink className="h-3 w-3" />
             </a>
           )}
@@ -142,44 +141,44 @@ export default function PaperDetailPage() {
 
       {/* AI Summary */}
       {paper.ai_summary && (
-        <Card className="mb-4 border-blue-200 bg-blue-50/30">
+        <Card className="mb-4 border-[#DADCE0] bg-[#F8F9FA] rounded-xl shadow-sm">
           <CardContent className="pt-4">
-            <h3 className="text-xs font-medium text-blue-800 mb-2 flex items-center gap-1">
+            <h3 className="text-xs font-medium text-[#202124] mb-2 flex items-center gap-1">
               <BookOpen className="h-3 w-3" /> AI通俗化摘要
             </h3>
-            <p className="text-sm text-slate-700 leading-relaxed">{paper.ai_summary}</p>
+            <p className="text-sm text-[#202124] leading-relaxed">{paper.ai_summary}</p>
           </CardContent>
         </Card>
       )}
 
       {/* Evidence */}
       {paper.evidence && (
-        <Card className="mb-4 border-slate-200">
+        <Card className="mb-4 border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-4">
-            <h3 className="text-sm font-medium text-slate-700 mb-3">证据抽取</h3>
+            <h3 className="text-sm font-medium text-[#202124] mb-3">证据抽取</h3>
             <div className="grid grid-cols-2 gap-3">
               {paper.evidence.method && (
-                <div className="bg-slate-50 rounded p-3">
-                  <p className="text-[10px] text-slate-400 uppercase mb-1">研究方法</p>
-                  <p className="text-xs text-slate-700">{paper.evidence.method}</p>
+                <div className="bg-[#F8F9FA] rounded-xl p-3">
+                  <p className="text-[10px] text-[#9AA0A6] uppercase mb-1">研究方法</p>
+                  <p className="text-xs text-[#202124]">{paper.evidence.method}</p>
                 </div>
               )}
               {paper.evidence.data && (
-                <div className="bg-slate-50 rounded p-3">
-                  <p className="text-[10px] text-slate-400 uppercase mb-1">数据</p>
-                  <p className="text-xs text-slate-700">{paper.evidence.data}</p>
+                <div className="bg-[#F8F9FA] rounded-xl p-3">
+                  <p className="text-[10px] text-[#9AA0A6] uppercase mb-1">数据</p>
+                  <p className="text-xs text-[#202124]">{paper.evidence.data}</p>
                 </div>
               )}
               {paper.evidence.conclusion && (
-                <div className="bg-slate-50 rounded p-3">
-                  <p className="text-[10px] text-slate-400 uppercase mb-1">结论</p>
-                  <p className="text-xs text-slate-700">{paper.evidence.conclusion}</p>
+                <div className="bg-[#F8F9FA] rounded-xl p-3">
+                  <p className="text-[10px] text-[#9AA0A6] uppercase mb-1">结论</p>
+                  <p className="text-xs text-[#202124]">{paper.evidence.conclusion}</p>
                 </div>
               )}
               {paper.evidence.limitation && (
-                <div className="bg-slate-50 rounded p-3">
-                  <p className="text-[10px] text-slate-400 uppercase mb-1">局限性</p>
-                  <p className="text-xs text-slate-700">{paper.evidence.limitation}</p>
+                <div className="bg-[#F8F9FA] rounded-xl p-3">
+                  <p className="text-[10px] text-[#9AA0A6] uppercase mb-1">局限性</p>
+                  <p className="text-xs text-[#202124]">{paper.evidence.limitation}</p>
                 </div>
               )}
             </div>
@@ -189,18 +188,18 @@ export default function PaperDetailPage() {
 
       {/* Terms */}
       {terms.length > 0 && (
-        <Card className="mb-4 border-slate-200">
+        <Card className="mb-4 border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-4">
-            <h3 className="text-sm font-medium text-slate-700 mb-3">术语解释</h3>
+            <h3 className="text-sm font-medium text-[#202124] mb-3">术语解释</h3>
             <div className="space-y-2">
               {terms.map((term) => (
-                <div key={term.id} className="flex items-start gap-3 p-2 bg-slate-50 rounded">
+                <div key={term.id} className="flex items-start gap-3 p-3 bg-[#F8F9FA] rounded-xl">
                   <div className="shrink-0">
-                    <p className="text-sm font-medium text-slate-900">{term.term}</p>
-                    {term.translation && <p className="text-xs text-blue-600">{term.translation}</p>}
+                    <p className="text-sm font-medium text-[#202124]">{term.term}</p>
+                    {term.translation && <p className="text-xs text-[#1a73e8]">{term.translation}</p>}
                   </div>
                   {term.explanation && (
-                    <p className="text-xs text-slate-600">{term.explanation}</p>
+                    <p className="text-xs text-[#5F6368]">{term.explanation}</p>
                   )}
                 </div>
               ))}
@@ -211,20 +210,20 @@ export default function PaperDetailPage() {
 
       {/* Abstract */}
       {paper.abstract && (
-        <Card className="mb-4 border-slate-200">
+        <Card className="mb-4 border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-4">
-            <h3 className="text-sm font-medium text-slate-700 mb-2">原文摘要</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">{paper.abstract}</p>
+            <h3 className="text-sm font-medium text-[#202124] mb-2">原文摘要</h3>
+            <p className="text-xs text-[#5F6368] leading-relaxed">{paper.abstract}</p>
           </CardContent>
         </Card>
       )}
 
       {/* Triage Reason */}
       {paper.triage_reason && (
-        <Card className="border-slate-200">
+        <Card className="border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-4">
-            <h3 className="text-sm font-medium text-slate-700 mb-2">分诊理由</h3>
-            <p className="text-xs text-slate-600 italic">{paper.triage_reason}</p>
+            <h3 className="text-sm font-medium text-[#202124] mb-2">分诊理由</h3>
+            <p className="text-xs text-[#5F6368] italic">{paper.triage_reason}</p>
           </CardContent>
         </Card>
       )}

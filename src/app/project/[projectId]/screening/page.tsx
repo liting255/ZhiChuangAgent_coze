@@ -108,14 +108,14 @@ export default function ScreeningPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-3xl mx-auto px-6 py-8">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
-          <div className="h-6 w-6 rounded-full bg-violet-600 text-white text-xs flex items-center justify-center font-medium">02</div>
-          <h1 className="text-xl font-semibold">一次筛选与主题分类</h1>
+          <div className="h-2.5 w-2.5 rounded-full bg-[#7C3AED]" />
+          <h1 className="text-xl font-medium text-[#202124]">一次筛选与主题分类</h1>
         </div>
-        <p className="text-sm text-slate-500 ml-8">AI排序 + 人工确认，生成主题分类标签</p>
+        <p className="text-sm text-[#5F6368] ml-[18px]">AI排序 + 人工确认，生成主题分类标签</p>
       </div>
 
       {/* Actions */}
@@ -123,24 +123,25 @@ export default function ScreeningPage() {
         <Button
           variant="outline"
           size="sm"
+          className="rounded-xl"
           onClick={handleGenerateTags}
           disabled={tagging}
         >
           {tagging ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Tag className="h-4 w-4 mr-2" />}
           {tagging ? "分类中..." : "生成主题标签"}
         </Button>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-[#5F6368]">
           已确认 {papers.filter((p) => p.human_confirmed).length} / {papers.length} 篇
         </span>
       </div>
 
       {/* Filter Tabs */}
       <Tabs value={activeFilter} onValueChange={setActiveFilter} className="mb-4">
-        <TabsList>
-          <TabsTrigger value="all" className="text-xs">全部 ({counts.all})</TabsTrigger>
-          <TabsTrigger value="priority_read" className="text-xs">优先精读 ({counts.priority_read})</TabsTrigger>
-          <TabsTrigger value="quick_browse" className="text-xs">快速浏览 ({counts.quick_browse})</TabsTrigger>
-          <TabsTrigger value="skip" className="text-xs">暂不纳入 ({counts.skip})</TabsTrigger>
+        <TabsList className="bg-[#F8F9FA] rounded-xl">
+          <TabsTrigger value="all" className="text-xs rounded-lg data-[state=active]:bg-white">全部 ({counts.all})</TabsTrigger>
+          <TabsTrigger value="priority_read" className="text-xs rounded-lg data-[state=active]:bg-white">优先精读 ({counts.priority_read})</TabsTrigger>
+          <TabsTrigger value="quick_browse" className="text-xs rounded-lg data-[state=active]:bg-white">快速浏览 ({counts.quick_browse})</TabsTrigger>
+          <TabsTrigger value="skip" className="text-xs rounded-lg data-[state=active]:bg-white">暂不纳入 ({counts.skip})</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -148,48 +149,47 @@ export default function ScreeningPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-white border border-slate-200 rounded-lg animate-pulse" />
+            <div key={i} className="h-24 bg-[#F8F9FA] rounded-xl animate-pulse" />
           ))}
         </div>
       ) : filteredPapers.length === 0 ? (
-        <Card className="border-dashed">
+        <Card className="border-dashed border-[#DADCE0] rounded-xl">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-8 w-8 text-slate-300 mb-2" />
-            <p className="text-sm text-slate-500">暂无文献，请先完成阶段01的检索</p>
+            <FileText className="h-8 w-8 text-[#DADCE0] mb-2" />
+            <p className="text-sm text-[#5F6368]">暂无文献，请先完成阶段01的检索</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
           {filteredPapers.map((paper) => (
-            <Card key={paper.id} className={`border-slate-200 ${paper.human_confirmed ? "border-l-4 border-l-green-400" : ""}`}>
+            <Card key={paper.id} className={`border-[#DADCE0] rounded-xl shadow-sm hover:bg-[#F8F9FA] transition-colors ${paper.human_confirmed ? "border-l-4 border-l-green-400" : ""}`}>
               <CardContent className="pt-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <Badge variant="outline" className={`${triageColors[paper.triage_level]} text-[10px]`}>
+                      <Badge variant="outline" className={`${triageColors[paper.triage_level]} text-[10px] rounded-full`}>
                         {triageLabels[paper.triage_level]}
                       </Badge>
                       {paper.human_confirmed && (
-                        <Badge variant="outline" className="text-[10px] border-green-300 text-green-700 bg-green-50">
+                        <Badge variant="outline" className="text-[10px] border-green-300 text-green-700 bg-green-50 rounded-full">
                           <CheckCircle2 className="h-3 w-3 mr-0.5" /> 已确认
                         </Badge>
                       )}
                       {paper.confidence === "low" && (
-                        <Badge variant="outline" className="text-[10px] border-red-300 text-red-700 bg-red-50">
+                        <Badge variant="outline" className="text-[10px] border-red-300 text-red-700 bg-red-50 rounded-full">
                           需人工确认
                         </Badge>
                       )}
                     </div>
-                    <h4 className="text-sm font-medium text-slate-900 mb-1 line-clamp-2">{paper.title}</h4>
+                    <h4 className="text-sm font-medium text-[#202124] mb-1 line-clamp-2">{paper.title}</h4>
                     {paper.triage_reason && (
-                      <p className="text-xs text-slate-400 italic mb-2">{paper.triage_reason}</p>
+                      <p className="text-xs text-[#9AA0A6] italic mb-2">{paper.triage_reason}</p>
                     )}
-                    {/* Tags */}
                     {paper.tags && (
                       <div className="flex flex-wrap gap-1 mb-2">
                         {Object.entries(paper.tags).map(([dim, tags]) =>
                           (tags as string[]).map((tag, i) => (
-                            <Badge key={`${dim}-${i}`} variant="secondary" className="text-[10px]">
+                            <Badge key={`${dim}-${i}`} variant="secondary" className="text-[10px] rounded-full">
                               {tag}
                             </Badge>
                           ))
@@ -203,7 +203,7 @@ export default function ScreeningPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs h-7"
+                      className="text-xs h-7 rounded-xl"
                       onClick={() => router.push(`/project/${projectId}/paper/${paper.id}`)}
                     >
                       <Eye className="h-3 w-3 mr-1" /> 详情
@@ -213,7 +213,7 @@ export default function ScreeningPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs h-7 text-green-600"
+                          className="text-xs h-7 text-green-600 rounded-xl"
                           onClick={() => handleConfirm(paper.id)}
                         >
                           <CheckCircle2 className="h-3 w-3 mr-1" /> 确认
@@ -221,7 +221,7 @@ export default function ScreeningPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs h-7 text-red-600"
+                          className="text-xs h-7 text-red-600 rounded-xl"
                           onClick={() => handleAdjustTriage(paper.id, paper.triage_level === "skip" ? "quick_browse" : "skip")}
                         >
                           <XCircle className="h-3 w-3 mr-1" />
@@ -241,7 +241,7 @@ export default function ScreeningPage() {
       <div className="flex justify-end mt-6">
         <Button
           variant="outline"
-          className="border-teal-300 text-teal-700 hover:bg-teal-50"
+          className="rounded-xl border-[#DADCE0]"
           onClick={() => router.push(`/project/${projectId}/library`)}
         >
           进入阶段03: 知识入库

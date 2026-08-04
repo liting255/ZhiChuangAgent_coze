@@ -71,6 +71,15 @@ pnpm lint         # ESLint 检查
 - `paper_notes` - 人工批注
 - `search_sessions` - 检索会话
 
+## 设计规范
+
+NotebookLM 风格（详见 DESIGN.md）：
+- 纯白背景 #FFFFFF，侧边栏 #F8F9FA
+- 主色 Google Blue #1a73e8
+- 卡片 rounded-xl + shadow-sm + border-[#DADCE0]
+- 主内容 max-w-3xl 居中，聊天式输入
+- 阶段色仅用于小圆点标识，不用于大面积
+
 ## 环境变量
 
 - `SUPABASE_SERVICE_URL` - Supabase 连接地址

@@ -64,7 +64,6 @@ export default function LibraryPage() {
   const includedPapers = papers.filter((p) => p.triage_level !== "skip" && p.human_confirmed);
   const processedPapers = papers.filter((p) => p.processing_status === "processed");
 
-  // Collect all tags
   const allTags: Record<string, Set<string>> = {};
   papers.forEach((p) => {
     if (p.tags) {
@@ -76,55 +75,55 @@ export default function LibraryPage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-3xl mx-auto px-6 py-8">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
-          <div className="h-6 w-6 rounded-full bg-teal-700 text-white text-xs flex items-center justify-center font-medium">03</div>
-          <h1 className="text-xl font-semibold">文献加工与知识入库</h1>
+          <div className="h-2.5 w-2.5 rounded-full bg-[#0F766E]" />
+          <h1 className="text-xl font-medium text-[#202124]">文献加工与知识入库</h1>
         </div>
-        <p className="text-sm text-slate-500 ml-8">全文获取、结构解析、向量化索引与证据抽取</p>
+        <p className="text-sm text-[#5F6368] ml-[18px]">全文获取、结构解析、向量化索引与证据抽取</p>
       </div>
 
       {/* Knowledge Base Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <Card className="border-slate-200">
+        <Card className="border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-4 pb-4 text-center">
-            <BookOpen className="h-5 w-5 text-teal-700 mx-auto mb-1" />
-            <p className="text-xl font-bold text-slate-900">{includedPapers.length}</p>
-            <p className="text-xs text-slate-500">纳入文献</p>
+            <BookOpen className="h-5 w-5 text-[#0F766E] mx-auto mb-1" />
+            <p className="text-xl font-semibold text-[#202124]">{includedPapers.length}</p>
+            <p className="text-xs text-[#5F6368]">纳入文献</p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200">
+        <Card className="border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-4 pb-4 text-center">
-            <Layers className="h-5 w-5 text-teal-700 mx-auto mb-1" />
-            <p className="text-xl font-bold text-slate-900">{processedPapers.length}</p>
-            <p className="text-xs text-slate-500">已处理</p>
+            <Layers className="h-5 w-5 text-[#0F766E] mx-auto mb-1" />
+            <p className="text-xl font-semibold text-[#202124]">{processedPapers.length}</p>
+            <p className="text-xs text-[#5F6368]">已处理</p>
           </CardContent>
         </Card>
-        <Card className="border-slate-200">
+        <Card className="border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-4 pb-4 text-center">
-            <Database className="h-5 w-5 text-teal-700 mx-auto mb-1" />
-            <p className="text-xl font-bold text-slate-900">{Object.keys(allTags).length}</p>
-            <p className="text-xs text-slate-500">标签维度</p>
+            <Database className="h-5 w-5 text-[#0F766E] mx-auto mb-1" />
+            <p className="text-xl font-semibold text-[#202124]">{Object.keys(allTags).length}</p>
+            <p className="text-xs text-[#5F6368]">标签维度</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Tag Cloud */}
       {Object.keys(allTags).length > 0 && (
-        <Card className="mb-6 border-slate-200">
+        <Card className="mb-6 border-[#DADCE0] rounded-xl shadow-sm">
           <CardContent className="pt-5">
-            <h3 className="text-sm font-medium text-slate-700 mb-3">标签体系</h3>
+            <h3 className="text-sm font-medium text-[#202124] mb-3">标签体系</h3>
             <div className="space-y-2">
               {Object.entries(allTags).map(([dim, tags]) => (
                 <div key={dim} className="flex items-start gap-2">
-                  <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5">
+                  <Badge variant="outline" className="text-[10px] shrink-0 mt-0.5 rounded-full">
                     {dim === "task" ? "任务" : dim === "method" ? "方法" : dim === "data" ? "数据" : "场景"}
                   </Badge>
                   <div className="flex flex-wrap gap-1">
                     {Array.from(tags).map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
+                      <Badge key={tag} variant="secondary" className="text-[10px] rounded-full">{tag}</Badge>
                     ))}
                   </div>
                 </div>
@@ -135,18 +134,18 @@ export default function LibraryPage() {
       )}
 
       {/* Process Button */}
-      <Card className="mb-6 border-teal-200 bg-teal-50/30">
+      <Card className="mb-6 border-[#DADCE0] bg-[#F8F9FA] rounded-xl shadow-sm">
         <CardContent className="pt-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-slate-900">统一知识库</h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <h3 className="text-sm font-medium text-[#202124]">统一知识库</h3>
+              <p className="text-xs text-[#5F6368] mt-1">
                 对纳入文献进行结构解析、向量化索引和证据抽取，构建文档库 + 向量库 + 标签库
               </p>
             </div>
             <Button
               variant="outline"
-              className="border-teal-300 text-teal-700 hover:bg-teal-50"
+              className="rounded-xl border-[#DADCE0]"
               onClick={handleProcess}
               disabled={processing || includedPapers.length === 0}
             >
@@ -162,30 +161,30 @@ export default function LibraryPage() {
 
       {/* Paper List */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-slate-700 mb-2">
+        <h3 className="text-sm font-medium text-[#202124] mb-3">
           纳入文献列表 ({includedPapers.length} 篇)
         </h3>
         {loading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 bg-white border border-slate-200 rounded animate-pulse" />
+              <div key={i} className="h-16 bg-[#F8F9FA] rounded-xl animate-pulse" />
             ))}
           </div>
         ) : includedPapers.length === 0 ? (
-          <Card className="border-dashed">
+          <Card className="border-dashed border-[#DADCE0] rounded-xl">
             <CardContent className="flex flex-col items-center justify-center py-8">
-              <FileText className="h-8 w-8 text-slate-300 mb-2" />
-              <p className="text-sm text-slate-500">请先完成阶段02的筛选确认</p>
+              <FileText className="h-8 w-8 text-[#DADCE0] mb-2" />
+              <p className="text-sm text-[#5F6368]">请先完成阶段02的筛选确认</p>
             </CardContent>
           </Card>
         ) : (
           includedPapers.map((paper) => (
-            <div key={paper.id} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
-              <div className={`h-2 w-2 rounded-full ${paper.processing_status === "processed" ? "bg-green-500" : "bg-slate-300"}`} />
+            <div key={paper.id} className="flex items-center gap-3 p-3 bg-white border border-[#DADCE0] rounded-xl">
+              <div className={`h-2 w-2 rounded-full shrink-0 ${paper.processing_status === "processed" ? "bg-green-500" : "bg-[#DADCE0]"}`} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-900 truncate">{paper.title}</p>
+                <p className="text-sm text-[#202124] truncate">{paper.title}</p>
               </div>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-[10px] rounded-full">
                 {paper.processing_status === "processed" ? "已入库" : "待处理"}
               </Badge>
             </div>
@@ -197,7 +196,7 @@ export default function LibraryPage() {
       <div className="flex justify-end mt-6">
         <Button
           variant="outline"
-          className="border-amber-300 text-amber-700 hover:bg-amber-50"
+          className="rounded-xl border-[#DADCE0]"
           onClick={() => router.push(`/project/${projectId}/evidence`)}
         >
           进入阶段04: 证据综合

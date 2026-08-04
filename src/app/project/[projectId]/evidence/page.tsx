@@ -3,7 +3,6 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,7 +54,6 @@ export default function EvidencePage() {
   };
 
   const handleRefine = () => {
-    // Feedback loop: adjust constraints and re-search
     setEvidenceQuery((prev) => prev + "，请补充更多近期文献和不同方法论的对比");
     setResult(null);
   };
@@ -79,30 +77,30 @@ export default function EvidencePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-3xl mx-auto px-6 py-8">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
-          <div className="h-6 w-6 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center font-medium">04</div>
-          <h1 className="text-xl font-semibold">需求驱动的二次检索与证据综合</h1>
+          <div className="h-2.5 w-2.5 rounded-full bg-[#D97706]" />
+          <h1 className="text-xl font-medium text-[#202124]">需求驱动的二次检索与证据综合</h1>
         </div>
-        <p className="text-sm text-slate-500 ml-8">基于知识库的场景化检索，迭代优化直至证据充分</p>
+        <p className="text-sm text-[#5F6368] ml-[18px]">基于知识库的场景化检索，迭代优化直至证据充分</p>
       </div>
 
-      {/* Evidence Query */}
-      <Card className="mb-6 border-slate-200">
+      {/* Evidence Query — Chat-like input */}
+      <Card className="mb-6 border-[#DADCE0] rounded-xl shadow-sm">
         <CardContent className="pt-5">
-          <label className="text-sm font-medium text-slate-700 mb-2 block">具体证据需求</label>
+          <label className="text-sm font-medium text-[#202124] mb-2 block">具体证据需求</label>
           <Textarea
             placeholder="例：充电站时序预测场景中，哪些方法在准确率上表现最优？不同方法的数据集和局限性如何？"
             value={evidenceQuery}
             onChange={(e) => setEvidenceQuery(e.target.value)}
             rows={3}
-            className="mb-3 resize-none"
+            className="mb-3 resize-none rounded-xl"
           />
           <div className="flex gap-2">
             <Button
-              className="bg-amber-600 hover:bg-amber-700"
+              className="bg-[#1a73e8] hover:bg-[#1557b0] rounded-xl"
               onClick={handleSearch}
               disabled={loading || !evidenceQuery.trim()}
             >
@@ -113,7 +111,7 @@ export default function EvidencePage() {
               )}
             </Button>
             {result && !result.synthesis.evidence_sufficient && (
-              <Button variant="outline" onClick={handleRefine}>
+              <Button variant="outline" className="rounded-xl" onClick={handleRefine}>
                 <RefreshCw className="h-4 w-4 mr-2" /> 调整约束/补充检索
               </Button>
             )}
@@ -123,19 +121,19 @@ export default function EvidencePage() {
 
       {/* Results */}
       {result && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Constraints Parsed */}
           {result.constraints && Object.keys(result.constraints).length > 0 && (
-            <Card className="border-slate-200">
+            <Card className="border-[#DADCE0] rounded-xl shadow-sm">
               <CardContent className="pt-5">
-                <h3 className="text-sm font-medium text-slate-700 mb-2">需求解析与场景约束</h3>
+                <h3 className="text-sm font-medium text-[#202124] mb-2">需求解析与场景约束</h3>
                 <div className="grid grid-cols-4 gap-2">
                   {Object.entries(result.constraints).map(([key, val]) => (
-                    <div key={key} className="bg-slate-50 rounded p-2">
-                      <p className="text-[10px] text-slate-400 uppercase">
+                    <div key={key} className="bg-[#F8F9FA] rounded-xl p-2">
+                      <p className="text-[10px] text-[#9AA0A6] uppercase">
                         {key === "object" ? "对象" : key === "time_range" ? "时间" : key === "method_focus" ? "方法" : "输出"}
                       </p>
-                      <p className="text-xs text-slate-700 truncate">{val || "-"}</p>
+                      <p className="text-xs text-[#202124] truncate">{val || "-"}</p>
                     </div>
                   ))}
                 </div>
@@ -144,7 +142,7 @@ export default function EvidencePage() {
           )}
 
           {/* Evidence Sufficiency */}
-          <div className={`flex items-center gap-3 p-3 rounded-lg border ${
+          <div className={`flex items-center gap-3 p-4 rounded-xl border ${
             result.synthesis.evidence_sufficient
               ? "bg-green-50 border-green-200"
               : "bg-amber-50 border-amber-200"
@@ -166,11 +164,11 @@ export default function EvidencePage() {
 
           {/* Synthesis */}
           {result.synthesis.synthesis && (
-            <Card className="border-slate-200">
+            <Card className="border-[#DADCE0] rounded-xl shadow-sm">
               <CardContent className="pt-5">
-                <h3 className="text-sm font-medium text-slate-700 mb-3">跨论文证据综合</h3>
+                <h3 className="text-sm font-medium text-[#202124] mb-3">跨论文证据综合</h3>
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm text-[#202124] leading-relaxed whitespace-pre-wrap">
                     {result.synthesis.synthesis}
                   </p>
                 </div>
@@ -181,7 +179,7 @@ export default function EvidencePage() {
           {/* Consensus & Conflicts */}
           <div className="grid grid-cols-2 gap-3">
             {result.synthesis.consensus && (
-              <Card className="border-green-200 bg-green-50/30">
+              <Card className="border-green-200 bg-green-50/30 rounded-xl shadow-sm">
                 <CardContent className="pt-4">
                   <h4 className="text-xs font-medium text-green-800 mb-1">共识</h4>
                   <p className="text-xs text-green-700">{result.synthesis.consensus}</p>
@@ -189,7 +187,7 @@ export default function EvidencePage() {
               </Card>
             )}
             {result.synthesis.conflicts && (
-              <Card className="border-red-200 bg-red-50/30">
+              <Card className="border-red-200 bg-red-50/30 rounded-xl shadow-sm">
                 <CardContent className="pt-4">
                   <h4 className="text-xs font-medium text-red-800 mb-1">分歧/冲突</h4>
                   <p className="text-xs text-red-700">{result.synthesis.conflicts}</p>
@@ -200,26 +198,26 @@ export default function EvidencePage() {
 
           {/* Comparison Matrix */}
           {result.synthesis.comparison_matrix && result.synthesis.comparison_matrix.length > 0 && (
-            <Card className="border-slate-200">
+            <Card className="border-[#DADCE0] rounded-xl shadow-sm">
               <CardContent className="pt-5">
-                <h3 className="text-sm font-medium text-slate-700 mb-3">方法与结果比较矩阵</h3>
+                <h3 className="text-sm font-medium text-[#202124] mb-3">方法与结果比较矩阵</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="text-left py-2 pr-3 font-medium text-slate-500">论文</th>
-                        <th className="text-left py-2 pr-3 font-medium text-slate-500">方法</th>
-                        <th className="text-left py-2 pr-3 font-medium text-slate-500">结果</th>
-                        <th className="text-left py-2 font-medium text-slate-500">局限</th>
+                      <tr className="border-b border-[#E8EAED]">
+                        <th className="text-left py-2 pr-3 font-medium text-[#5F6368]">论文</th>
+                        <th className="text-left py-2 pr-3 font-medium text-[#5F6368]">方法</th>
+                        <th className="text-left py-2 pr-3 font-medium text-[#5F6368]">结果</th>
+                        <th className="text-left py-2 font-medium text-[#5F6368]">局限</th>
                       </tr>
                     </thead>
                     <tbody>
                       {result.synthesis.comparison_matrix.map((row, i) => (
-                        <tr key={i} className="border-b border-slate-100">
-                          <td className="py-2 pr-3 text-slate-900 max-w-[200px] truncate">{row.paper}</td>
-                          <td className="py-2 pr-3 text-slate-600">{row.method}</td>
-                          <td className="py-2 pr-3 text-slate-600">{row.result}</td>
-                          <td className="py-2 text-slate-600">{row.limitation}</td>
+                        <tr key={i} className="border-b border-[#E8EAED]">
+                          <td className="py-2 pr-3 text-[#202124] max-w-[200px] truncate">{row.paper}</td>
+                          <td className="py-2 pr-3 text-[#5F6368]">{row.method}</td>
+                          <td className="py-2 pr-3 text-[#5F6368]">{row.result}</td>
+                          <td className="py-2 text-[#5F6368]">{row.limitation}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -231,13 +229,13 @@ export default function EvidencePage() {
 
           {/* Reading Path */}
           {result.synthesis.reading_path && result.synthesis.reading_path.length > 0 && (
-            <Card className="border-slate-200">
+            <Card className="border-[#DADCE0] rounded-xl shadow-sm">
               <CardContent className="pt-5">
-                <h3 className="text-sm font-medium text-slate-700 mb-3">推荐阅读路径</h3>
+                <h3 className="text-sm font-medium text-[#202124] mb-3">推荐阅读路径</h3>
                 <ol className="space-y-1.5">
                   {result.synthesis.reading_path.map((item, i) => (
-                    <li key={i} className="flex items-center gap-2 text-xs text-slate-700">
-                      <span className="h-5 w-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] font-medium shrink-0">
+                    <li key={i} className="flex items-center gap-2 text-xs text-[#202124]">
+                      <span className="h-5 w-5 rounded-full bg-[#F8F9FA] text-[#5F6368] flex items-center justify-center text-[10px] font-medium shrink-0">
                         {i + 1}
                       </span>
                       {item}
@@ -249,13 +247,13 @@ export default function EvidencePage() {
           )}
 
           {/* Iteration Info */}
-          <p className="text-xs text-slate-400 text-center">
+          <p className="text-xs text-[#9AA0A6] text-center">
             第 {iteration} 次迭代 | 知识库 {result.kb_paper_count} 篇 + 新检索 {result.additional_results.length} 篇
           </p>
 
           {/* Export */}
           <div className="flex justify-end">
-            <Button variant="outline" onClick={handleExport}>
+            <Button variant="outline" className="rounded-xl" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               导出证据报告
             </Button>

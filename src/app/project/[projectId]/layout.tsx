@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 import { Search, FileText, Database, FlaskConical, ArrowLeft, BookOpen } from "lucide-react";
 
 const stages = [
-  { id: "discover", label: "文献发现", sublabel: "双通道检索", icon: Search, color: "#2563EB" },
-  { id: "screening", label: "筛选分类", sublabel: "AI分诊 + 人工确认", icon: FileText, color: "#7C3AED" },
-  { id: "library", label: "知识入库", sublabel: "结构化 + 向量化", icon: Database, color: "#0F766E" },
-  { id: "evidence", label: "证据综合", sublabel: "二次检索 + 迭代", icon: FlaskConical, color: "#D97706" },
+  { id: "discover", label: "文献发现", icon: Search, color: "#2563EB" },
+  { id: "screening", label: "筛选分类", icon: FileText, color: "#7C3AED" },
+  { id: "library", label: "知识入库", icon: Database, color: "#0F766E" },
+  { id: "evidence", label: "证据综合", icon: FlaskConical, color: "#D97706" },
 ];
 
 export default function ProjectLayout({ children }: { children: React.ReactNode }) {
@@ -20,14 +20,14 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
   const currentStage = stages.find((s) => pathname.includes(`/${s.id}`));
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex">
-      {/* Sidebar */}
-      <aside className="w-60 border-r border-slate-200 bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex">
+      {/* Sidebar — NotebookLM style */}
+      <aside className="w-56 border-r border-[#DADCE0] bg-[#F8F9FA] flex flex-col shrink-0">
         {/* Back */}
-        <div className="p-4 border-b border-slate-100">
+        <div className="px-4 py-4 border-b border-[#E8EAED]">
           <button
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+            className="flex items-center gap-2 text-sm text-[#5F6368] hover:text-[#202124] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             返回工作台
@@ -35,8 +35,8 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
         </div>
 
         {/* Pipeline stages */}
-        <nav className="flex-1 p-3 space-y-1">
-          <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider px-3 mb-2">
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          <p className="text-[11px] font-medium text-[#5F6368] uppercase tracking-wider px-3 mb-3">
             四阶段流水线
           </p>
           {stages.map((stage, i) => {
@@ -46,27 +46,23 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
                 key={stage.id}
                 onClick={() => router.push(`/project/${projectId}/${stage.id}`)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors",
                   isActive
-                    ? "bg-slate-50 border border-slate-200"
-                    : "hover:bg-slate-50 border border-transparent"
+                    ? "bg-white shadow-sm border border-[#DADCE0]"
+                    : "hover:bg-[#E8EAED]/50 border border-transparent"
                 )}
               >
                 <div
-                  className="h-7 w-7 rounded flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: isActive ? stage.color + "15" : "#f8fafc" }}
-                >
-                  <stage.icon
-                    className="h-3.5 w-3.5"
-                    style={{ color: isActive ? stage.color : "#94a3b8" }}
-                  />
-                </div>
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: stage.color }}
+                />
                 <div className="min-w-0">
-                  <p className={cn("text-sm font-medium truncate", isActive ? "text-slate-900" : "text-slate-600")}>
-                    <span className="text-[10px] text-slate-400 mr-1">{String(i + 1).padStart(2, "0")}</span>
+                  <p className={cn(
+                    "text-sm truncate",
+                    isActive ? "text-[#202124] font-medium" : "text-[#5F6368]"
+                  )}>
                     {stage.label}
                   </p>
-                  <p className="text-[11px] text-slate-400 truncate">{stage.sublabel}</p>
                 </div>
               </button>
             );
@@ -74,16 +70,16 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="px-4 py-4 border-t border-[#E8EAED]">
+          <div className="flex items-center gap-2 text-xs text-[#9AA0A6]">
             <BookOpen className="h-3 w-3" />
-            <span>智创Agent v1.0</span>
+            <span>智创Agent</span>
           </div>
         </div>
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-white">
         {children}
       </main>
     </div>
