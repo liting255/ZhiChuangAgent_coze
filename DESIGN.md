@@ -44,18 +44,60 @@
 
 ## 布局
 
-- 整体：左侧栏 + 右侧主内容区
-- 侧边栏：w-56, bg-[#F8F9FA], border-r
-- 主内容：max-w-3xl, mx-auto, centered
-- 卡片：rounded-xl, shadow-sm, border-[#DADCE0]
+### 全局三栏布局（NotebookLM 风格）
+- **左侧面板（Sources）**：w-72, bg-[#F8F9FA], border-r, flex flex-col
+  - 顶部：文献导入区（搜索框 + 上传按钮）
+  - 中部：文献源列表（可勾选、可展开摘要）
+  - 底部：筛选/排序工具栏
+- **中间面板（Chat）**：flex-1, bg-white, flex flex-col
+  - 顶部：标题栏（当前选中文献数 + 新建对话按钮）
+  - 中部：对话消息流（聊天气泡式，支持 Markdown 渲染）
+  - 底部：输入框 + 发送按钮 + 沉淀文档指令入口
+- **右侧面板（Notes）**：w-72, bg-[#F8F9FA], border-l, flex flex-col
+  - 顶部：标题栏（"研究笔记" + 新建按钮）
+  - 中部：笔记/文档列表（卡片式，可展开预览）
+  - 底部：导出/管理工具栏
+
+### 面板折叠
+- 左右面板均可通过边栏按钮折叠/展开
+- 折叠后中间面板自动扩展填充空间
+- 过渡动画：transition-all duration-300
+
+### 卡片
+- 圆角：rounded-xl (12px)
+- 阴影：shadow-sm
+- 边框：border-[#DADCE0]
+- 悬停：hover:bg-[#F8F9FA]
 
 ## 交互与状态
 
-- 过渡：transition-colors duration-150
+- 过渡：transition-colors duration-150 / transition-all duration-300（面板折叠）
 - 悬停：背景色微变 (bg-[#F8F9FA])
 - 加载：骨架屏
 - 按钮：bg-[#1a73e8] hover:bg-[#1557b0] text-white
 - 轮廓按钮：variant="outline" border-[#DADCE0]
+- 选中文献：左侧蓝色边框标记 (border-l-2 border-l-[#1a73e8])
+- 消息气泡：用户消息 bg-[#E8F0FE] 右对齐，AI 消息 bg-white border 左对齐
+- 面板折叠按钮：圆角小按钮，hover 时显示 tooltip
+
+## 组件规范
+
+### 文献源卡片（SourceCard）
+- 高度紧凑，默认显示 2 行标题 + 1 行摘要
+- 左侧 checkbox 用于选中对话
+- 右侧 tag 标签（分诊级别）
+- 展开时显示完整摘要 + 操作按钮
+
+### 对话消息（ChatMessage）
+- 用户消息：bg-[#E8F0FE] rounded-2xl rounded-br-md
+- AI 消息：bg-white border border-[#DADCE0] rounded-2xl rounded-bl-md
+- 支持 Markdown（标题、列表、粗体、代码块）
+- 底部显示操作栏（复制、重新生成、沉淀为笔记）
+
+### 笔记文档卡片（NoteCard）
+- 紧凑卡片式，显示标题 + 来源 + 创建时间
+- 点击展开预览内容
+- 支持删除、重命名、导出
 
 ## 设计禁忌
 
