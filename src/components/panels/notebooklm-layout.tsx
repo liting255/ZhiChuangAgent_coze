@@ -2,8 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { Panel, Group, Separator } from "react-resizable-panels";
-import type { PanelImperativeHandle } from "react-resizable-panels";
 import { SourcePanel } from "@/components/panels/source-panel";
 import { ChatPanel } from "@/components/panels/chat-panel";
 import { NotesPanel } from "@/components/panels/notes-panel";
@@ -22,6 +20,77 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// ─── Resizable Panel Hook ───────────────────────────────────────────
+function useResizablePanel(initialSize: number, minSize: number, maxSize: number) {
+  const [size, setSize] = useState(initialSize);
+  const sizeRef = useRef(initialSize);
+
+  const updateSize = useCallback((newSize: number) => {
+    const clamped = Math.min(maxSize, Math.max(minSize, newSize));
+    sizeRef.current = clamped;
+    setSize(clamped);
+  }, [minSize, maxSize]);
+
+  return { size, sizeRef, updateSize };
+}
+
+// ─── Drag Handle Component ──────────────────────────────────────────
+function DragHandle({
+  onDrag,
+  direction,
+}: {
+  onDrag: (delta: number) => void;
+  direction: "left" | "right";
+}) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const startXRef = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      setIsDragging(true);
+      startXRef.current = e.clientX;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    []
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging) return;
+      const delta = e.clientX - startXRef.current;
+      startXRef.current = e.clientX;
+      onDrag(direction === "left" ? delta : -delta);
+    },
+    [isDragging, onDrag, direction]
+  );
+
+  const handlePointerUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative w-1 cursor-col-resize select-none touch-none shrink-0 transition-colors duration-150",
+        isDragging ? "bg-[#1a73e8]" : isHovered ? "bg-[#1a73e8]/50" : "bg-[#E8EAED]"
+      )}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+      style={{ touchAction: "none" }}
+    >
+      {/* Wider invisible hit area */}
+      <div className="absolute inset-y-0 -left-2 -right-2" />
+    </div>
+  );
+}
+
 export default function NotebookLMLayout({
   children,
 }: {
@@ -31,13 +100,15 @@ export default function NotebookLMLayout({
   const router = useRouter();
   const projectId = params.projectId as string;
 
-  // Panel refs for imperative collapse/expand
-  const leftPanelRef = useRef<PanelImperativeHandle>(null);
-  const rightPanelRef = useRef<PanelImperativeHandle>(null);
+  // Panel sizes (percentage)
+  const leftPanel = useResizablePanel(22, 15, 35);
+  const rightPanel = useResizablePanel(22, 15, 35);
 
-  // Panel collapsed state (tracked for UI toggle buttons)
+  // Panel collapsed state
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const leftPrevSize = useRef(22);
+  const rightPrevSize = useRef(22);
 
   // Source panel state
   const [papers, setPapers] = useState<SourcePaper[]>([]);
@@ -47,6 +118,9 @@ export default function NotebookLMLayout({
   // Notes panel state
   const [notes, setNotes] = useState<NoteData[]>([]);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+
+  // Container ref for calculating percentages
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Fetch papers on mount
   useEffect(() => {
@@ -184,24 +258,55 @@ export default function NotebookLMLayout({
     [projectId]
   );
 
-  // Toggle handlers using imperative Panel API
+  // Toggle handlers
   const toggleLeftPanel = useCallback(() => {
     if (leftCollapsed) {
-      leftPanelRef.current?.expand();
+      leftPanel.updateSize(leftPrevSize.current);
+      setLeftCollapsed(false);
     } else {
-      leftPanelRef.current?.collapse();
+      leftPrevSize.current = leftPanel.sizeRef.current;
+      leftPanel.updateSize(0);
+      setLeftCollapsed(true);
     }
-    setLeftCollapsed(!leftCollapsed);
-  }, [leftCollapsed]);
+  }, [leftCollapsed, leftPanel]);
 
   const toggleRightPanel = useCallback(() => {
     if (rightCollapsed) {
-      rightPanelRef.current?.expand();
+      rightPanel.updateSize(rightPrevSize.current);
+      setRightCollapsed(false);
     } else {
-      rightPanelRef.current?.collapse();
+      rightPrevSize.current = rightPanel.sizeRef.current;
+      rightPanel.updateSize(0);
+      setRightCollapsed(true);
     }
-    setRightCollapsed(!rightCollapsed);
-  }, [rightCollapsed]);
+  }, [rightCollapsed, rightPanel]);
+
+  // Drag handlers - convert pixel delta to percentage
+  const handleLeftDrag = useCallback(
+    (deltaPx: number) => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.offsetWidth;
+      const deltaPercent = (deltaPx / containerWidth) * 100;
+      const newSize = leftPanel.sizeRef.current + deltaPercent;
+      leftPanel.updateSize(newSize);
+      if (newSize <= 0) setLeftCollapsed(true);
+      else setLeftCollapsed(false);
+    },
+    [leftPanel]
+  );
+
+  const handleRightDrag = useCallback(
+    (deltaPx: number) => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.offsetWidth;
+      const deltaPercent = (deltaPx / containerWidth) * 100;
+      const newSize = rightPanel.sizeRef.current + deltaPercent;
+      rightPanel.updateSize(newSize);
+      if (newSize <= 0) setRightCollapsed(true);
+      else setRightCollapsed(false);
+    },
+    [rightPanel]
+  );
 
   // Note handlers
   const handleSaveToNotes = useCallback(
@@ -277,6 +382,11 @@ export default function NotebookLMLayout({
     .filter((p) => selectedIds.includes(p.id))
     .map((p) => p.title);
 
+  // Calculate center panel size
+  const leftSize = leftCollapsed ? 0 : leftPanel.size;
+  const rightSize = rightCollapsed ? 0 : rightPanel.size;
+  const centerSize = 100 - leftSize - rightSize;
+
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden">
       {/* Top bar */}
@@ -335,19 +445,17 @@ export default function NotebookLMLayout({
         </div>
       </header>
 
-      {/* Three-panel layout — all panels + separators always rendered as direct children */}
-      <div className="flex-1 overflow-hidden">
-        <Group orientation="horizontal">
-          <Panel
-            defaultSize={22}
-            minSize={15}
-            maxSize={35}
-            collapsible
-            collapsedSize={0}
-            panelRef={leftPanelRef}
-            onResize={(panelSize) => {
-              setLeftCollapsed(panelSize.asPercentage === 0);
-            }}
+      {/* Three-panel layout with custom drag handles */}
+      <div
+        ref={containerRef}
+        className="flex-1 flex flex-row overflow-hidden"
+        style={{ touchAction: "none" }}
+      >
+        {/* Left Panel - Sources */}
+        {!leftCollapsed && (
+          <div
+            className="h-full overflow-hidden shrink-0"
+            style={{ width: `${leftSize}%` }}
           >
             <SourcePanel
               papers={papers}
@@ -359,31 +467,37 @@ export default function NotebookLMLayout({
               onUpload={handleUpload}
               loading={searchLoading}
             />
-          </Panel>
+          </div>
+        )}
 
-          <Separator className="data-[resize-handle-active]:bg-[#1a73e8] data-[resize-handle-state=hover]:bg-[#1a73e8] bg-[#E8EAED] transition-colors" />
+        {/* Left Drag Handle */}
+        {!leftCollapsed && (
+          <DragHandle onDrag={handleLeftDrag} direction="left" />
+        )}
 
-          <Panel minSize={30}>
-            <ChatPanel
-              projectId={projectId}
-              selectedPaperIds={selectedIds}
-              selectedPaperTitles={selectedPaperTitles}
-              onSaveToNotes={handleSaveToNotes}
-            />
-          </Panel>
+        {/* Center Panel - Chat */}
+        <div
+          className="h-full overflow-hidden shrink-0"
+          style={{ width: `${centerSize}%` }}
+        >
+          <ChatPanel
+            projectId={projectId}
+            selectedPaperIds={selectedIds}
+            selectedPaperTitles={selectedPaperTitles}
+            onSaveToNotes={handleSaveToNotes}
+          />
+        </div>
 
-          <Separator className="data-[resize-handle-active]:bg-[#1a73e8] data-[resize-handle-state=hover]:bg-[#1a73e8] bg-[#E8EAED] transition-colors" />
+        {/* Right Drag Handle */}
+        {!rightCollapsed && (
+          <DragHandle onDrag={handleRightDrag} direction="right" />
+        )}
 
-          <Panel
-            defaultSize={22}
-            minSize={15}
-            maxSize={35}
-            collapsible
-            collapsedSize={0}
-            panelRef={rightPanelRef}
-            onResize={(panelSize) => {
-              setRightCollapsed(panelSize.asPercentage === 0);
-            }}
+        {/* Right Panel - Notes */}
+        {!rightCollapsed && (
+          <div
+            className="h-full overflow-hidden shrink-0"
+            style={{ width: `${rightSize}%` }}
           >
             <NotesPanel
               notes={notes}
@@ -393,8 +507,8 @@ export default function NotebookLMLayout({
               onExportNote={handleExportNote}
               onCreateNote={handleCreateNote}
             />
-          </Panel>
-        </Group>
+          </div>
+        )}
       </div>
     </div>
   );
