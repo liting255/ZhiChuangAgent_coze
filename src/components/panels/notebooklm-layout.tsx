@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Panel, Group, Separator } from "react-resizable-panels";
+import type { PanelImperativeHandle } from "react-resizable-panels";
 import { SourcePanel } from "@/components/panels/source-panel";
 import { ChatPanel } from "@/components/panels/chat-panel";
 import { NotesPanel } from "@/components/panels/notes-panel";
@@ -30,7 +31,11 @@ export default function NotebookLMLayout({
   const router = useRouter();
   const projectId = params.projectId as string;
 
-  // Panel visibility
+  // Panel refs for imperative collapse/expand
+  const leftPanelRef = useRef<PanelImperativeHandle>(null);
+  const rightPanelRef = useRef<PanelImperativeHandle>(null);
+
+  // Panel collapsed state (tracked for UI toggle buttons)
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
 
@@ -179,9 +184,24 @@ export default function NotebookLMLayout({
     [projectId]
   );
 
-  const handleFilterChange = useCallback((_filter: string) => {
-    // Filtering is handled inside SourcePanel
-  }, []);
+  // Toggle handlers using imperative Panel API
+  const toggleLeftPanel = useCallback(() => {
+    if (leftCollapsed) {
+      leftPanelRef.current?.expand();
+    } else {
+      leftPanelRef.current?.collapse();
+    }
+    setLeftCollapsed(!leftCollapsed);
+  }, [leftCollapsed]);
+
+  const toggleRightPanel = useCallback(() => {
+    if (rightCollapsed) {
+      rightPanelRef.current?.expand();
+    } else {
+      rightPanelRef.current?.collapse();
+    }
+    setRightCollapsed(!rightCollapsed);
+  }, [rightCollapsed]);
 
   // Note handlers
   const handleSaveToNotes = useCallback(
@@ -250,7 +270,6 @@ export default function NotebookLMLayout({
   );
 
   const handleCreateNote = useCallback(() => {
-    // Open a blank note creation - for now, trigger via chat save
     toast.info("在对话中使用 /save 指令沉淀笔记");
   }, []);
 
@@ -286,7 +305,7 @@ export default function NotebookLMLayout({
                 ? "text-[#1a73e8] bg-[#E8F0FE]"
                 : "text-[#5F6368]"
             )}
-            onClick={() => setLeftCollapsed(!leftCollapsed)}
+            onClick={toggleLeftPanel}
             title={leftCollapsed ? "展开文献面板" : "折叠文献面板"}
           >
             {leftCollapsed ? (
@@ -304,7 +323,7 @@ export default function NotebookLMLayout({
                 ? "text-[#1a73e8] bg-[#E8F0FE]"
                 : "text-[#5F6368]"
             )}
-            onClick={() => setRightCollapsed(!rightCollapsed)}
+            onClick={toggleRightPanel}
             title={rightCollapsed ? "展开笔记面板" : "折叠笔记面板"}
           >
             {rightCollapsed ? (
@@ -316,30 +335,34 @@ export default function NotebookLMLayout({
         </div>
       </header>
 
-      {/* Three-panel layout */}
+      {/* Three-panel layout — all panels + separators always rendered as direct children */}
       <div className="flex-1 overflow-hidden">
         <Group orientation="horizontal">
-          {/* Left: Sources */}
-          {!leftCollapsed && (
-            <>
-              <Panel defaultSize={22} minSize={18} maxSize={35}>
-                <SourcePanel
-                  papers={papers}
-                  selectedIds={selectedIds}
-                  onTogglePaper={handleTogglePaper}
-                  onSelectAll={handleSelectAll}
-                  onDeselectAll={handleDeselectAll}
-                  onSearch={handleSearch}
-                  onUpload={handleUpload}
-                  onFilterChange={handleFilterChange}
-                  loading={searchLoading}
-                />
-              </Panel>
-              <Separator className="w-1 bg-[#E8EAED] hover:bg-[#1a73e8] transition-colors cursor-col-resize" />
-            </>
-          )}
+          <Panel
+            defaultSize={22}
+            minSize={15}
+            maxSize={35}
+            collapsible
+            collapsedSize={0}
+            panelRef={leftPanelRef}
+            onResize={(panelSize) => {
+              setLeftCollapsed(panelSize.asPercentage === 0);
+            }}
+          >
+            <SourcePanel
+              papers={papers}
+              selectedIds={selectedIds}
+              onTogglePaper={handleTogglePaper}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
+              onSearch={handleSearch}
+              onUpload={handleUpload}
+              loading={searchLoading}
+            />
+          </Panel>
 
-          {/* Center: Chat */}
+          <Separator className="data-[resize-handle-active]:bg-[#1a73e8] data-[resize-handle-state=hover]:bg-[#1a73e8] bg-[#E8EAED] transition-colors" />
+
           <Panel minSize={30}>
             <ChatPanel
               projectId={projectId}
@@ -349,22 +372,28 @@ export default function NotebookLMLayout({
             />
           </Panel>
 
-          {/* Right: Notes */}
-          {!rightCollapsed && (
-            <>
-              <Separator className="w-1 bg-[#E8EAED] hover:bg-[#1a73e8] transition-colors cursor-col-resize" />
-              <Panel defaultSize={22} minSize={18} maxSize={35}>
-                <NotesPanel
-                  notes={notes}
-                  activeNoteId={activeNoteId}
-                  onSelectNote={setActiveNoteId}
-                  onDeleteNote={handleDeleteNote}
-                  onExportNote={handleExportNote}
-                  onCreateNote={handleCreateNote}
-                />
-              </Panel>
-            </>
-          )}
+          <Separator className="data-[resize-handle-active]:bg-[#1a73e8] data-[resize-handle-state=hover]:bg-[#1a73e8] bg-[#E8EAED] transition-colors" />
+
+          <Panel
+            defaultSize={22}
+            minSize={15}
+            maxSize={35}
+            collapsible
+            collapsedSize={0}
+            panelRef={rightPanelRef}
+            onResize={(panelSize) => {
+              setRightCollapsed(panelSize.asPercentage === 0);
+            }}
+          >
+            <NotesPanel
+              notes={notes}
+              activeNoteId={activeNoteId}
+              onSelectNote={setActiveNoteId}
+              onDeleteNote={handleDeleteNote}
+              onExportNote={handleExportNote}
+              onCreateNote={handleCreateNote}
+            />
+          </Panel>
         </Group>
       </div>
     </div>

@@ -26,7 +26,6 @@ interface SourcePanelProps {
   onDeselectAll: () => void;
   onSearch: (query: string) => void;
   onUpload: (files: FileList) => void;
-  onFilterChange: (filter: string) => void;
   loading: boolean;
   className?: string;
 }
@@ -41,7 +40,6 @@ export function SourcePanel({
   onDeselectAll,
   onSearch,
   onUpload,
-  onFilterChange,
   loading,
   className,
 }: SourcePanelProps) {
@@ -177,7 +175,6 @@ export function SourcePanel({
               key={tab.key}
               onClick={() => {
                 setActiveFilter(tab.key);
-                onFilterChange(tab.key);
               }}
               className={cn(
                 "text-[10px] px-2 py-1 rounded-full whitespace-nowrap transition-colors",
