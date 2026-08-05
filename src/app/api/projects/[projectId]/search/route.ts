@@ -40,27 +40,28 @@ export async function POST(
     { role: "user" as const, content: query },
   ];
 
-  const expandResponse = await llmClient.invoke(expandMessages, {
-    temperature: 0.3,
-    model: "doubao-seed-2-0-lite-260215",
-  });
-
   let expandedData: {
     intent?: { topic?: string; object?: string; task?: string; boundary?: string };
     expanded_queries?: string[];
     boolean_query?: string;
     english_keywords?: string[];
   } = {};
+
   try {
+    const expandResponse = await llmClient.invoke(expandMessages, {
+      temperature: 0.3,
+      model: "doubao-seed-2-0-lite-260215",
+    });
     const jsonMatch = expandResponse.content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       expandedData = JSON.parse(jsonMatch[0]);
     }
-  } catch {
+  } catch (err) {
+    console.error("[Search] Query expansion failed:", err);
     expandedData = { expanded_queries: [query], english_keywords: [query] };
   }
 
-  // Step 2: Execute Search (Web Search + Semantic Scholar simulation)
+  // Step 2: Execute Search
   const searchClient = new SearchClient(config, customHeaders);
   const searchQueries = mode === "boolean"
     ? [boolean_query || expandedData.boolean_query || query]
@@ -80,16 +81,12 @@ export async function POST(
     doi?: string;
   }> = [];
 
-  // Execute searches
+  // Execute searches — use webSearch (confirmed working), with academic query suffix
   for (const sq of searchQueries.slice(0, 3)) {
     try {
-      const response = await searchClient.advancedSearch(sq, {
-        count: 8,
-        needSummary: false,
-        sites: "arxiv.org,scholar.google.com,semanticscholar.org,pubmed.ncbi.nlm.nih.gov",
-      });
+      const response = await searchClient.webSearch(sq, 8, false);
 
-      if (response.web_items) {
+      if (response.web_items && response.web_items.length > 0) {
         for (const item of response.web_items) {
           allResults.push({
             title: item.title,
@@ -99,8 +96,8 @@ export async function POST(
           });
         }
       }
-    } catch {
-      // Continue with other queries
+    } catch (err) {
+      console.error(`[Search] webSearch failed for "${sq}":`, err);
     }
   }
 
@@ -113,11 +110,21 @@ export async function POST(
     return true;
   });
 
-  // Step 3: AI Triage - Score and classify each paper
-  const triageMessages = [
-    {
-      role: "system" as const,
-      content: `你是一个科研文献分诊专家（类似医院分诊）。根据研究问题，对每篇文献进行：
+  // Step 3: AI Triage — only if we have results
+  let triageResults: Array<{
+    index: number;
+    relevance_score: number;
+    quality_score: number;
+    triage_level: string;
+    triage_reason: string;
+    confidence: string;
+  }> = [];
+
+  if (uniqueResults.length > 0) {
+    const triageMessages = [
+      {
+        role: "system" as const,
+        content: `你是一个科研文献分诊专家（类似医院分诊）。根据研究问题，对每篇文献进行：
 1. 相关性评分 (0-100)
 2. 质量评分 (0-100)
 3. 分诊级别：priority_read（优先精读）、quick_browse（快速浏览）、skip（暂不纳入）
@@ -131,30 +138,26 @@ export async function POST(
 
 文献列表：
 ${uniqueResults.slice(0, 15).map((r, i) => `${i}. ${r.title}\n   摘要: ${r.snippet.slice(0, 200)}`).join("\n\n")}`,
-    },
-    { role: "user" as const, content: "请对上述文献进行分诊评估" },
-  ];
+      },
+      { role: "user" as const, content: "请对上述文献进行分诊评估" },
+    ];
 
-  const triageResponse = await llmClient.invoke(triageMessages, {
-    temperature: 0.2,
-    model: "doubao-seed-2-0-lite-260215",
-  });
-
-  let triageResults: Array<{
-    index: number;
-    relevance_score: number;
-    quality_score: number;
-    triage_level: string;
-    triage_reason: string;
-    confidence: string;
-  }> = [];
-  try {
-    const jsonMatch = triageResponse.content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      triageResults = JSON.parse(jsonMatch[0]);
+    try {
+      const triageResponse = await llmClient.invoke(triageMessages, {
+        temperature: 0.2,
+        model: "doubao-seed-2-0-lite-260215",
+      });
+      const jsonMatch = triageResponse.content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        triageResults = JSON.parse(jsonMatch[0]);
+      }
+    } catch (err) {
+      console.error("[Search] Triage failed:", err);
     }
-  } catch {
-    // Fallback: assign default scores
+  }
+
+  // Fallback triage if AI failed
+  if (triageResults.length === 0 && uniqueResults.length > 0) {
     triageResults = uniqueResults.slice(0, 15).map((_, i) => ({
       index: i,
       relevance_score: 50,
@@ -183,7 +186,7 @@ ${uniqueResults.slice(0, 15).map((r, i) => `${i}. ${r.title}\n   摘要: ${r.sni
     .select()
     .single();
 
-  // Save papers with triage results
+  // Save papers with triage results, then re-fetch to get auto-generated IDs
   const papersToInsert = uniqueResults.slice(0, 15).map((r, i) => {
     const triage = triageResults.find((t) => t.index === i);
     return {
@@ -201,8 +204,17 @@ ${uniqueResults.slice(0, 15).map((r, i) => `${i}. ${r.title}\n   摘要: ${r.sni
     };
   });
 
+  let savedPapers: Array<Record<string, unknown>> = [];
+
   if (papersToInsert.length > 0) {
-    await client.from("papers").insert(papersToInsert);
+    const { data: inserted } = await client
+      .from("papers")
+      .insert(papersToInsert)
+      .select();
+
+    if (inserted) {
+      savedPapers = inserted;
+    }
   }
 
   return NextResponse.json({
@@ -214,6 +226,6 @@ ${uniqueResults.slice(0, 15).map((r, i) => `${i}. ${r.title}\n   摘要: ${r.sni
       quick_browse: triageResults.filter((t) => t.triage_level === "quick_browse").length,
       skip: triageResults.filter((t) => t.triage_level === "skip").length,
     },
-    papers: papersToInsert,
+    papers: savedPapers,
   });
 }

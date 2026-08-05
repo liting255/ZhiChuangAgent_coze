@@ -187,8 +187,8 @@ export default function NotebookLMLayout({
         });
         const data = await res.json();
         const newPapers: SourcePaper[] = (data.papers || []).map(
-          (p: Record<string, unknown>) => ({
-            id: (p.id as string) || `temp-${Date.now()}`,
+          (p: Record<string, unknown>, idx: number) => ({
+            id: (p.id as string) || `search-${Date.now()}-${idx}`,
             title: (p.title as string) || "Untitled",
             abstract: (p.abstract as string) || "",
             source: (p.source as string) || "网络检索",
@@ -196,11 +196,11 @@ export default function NotebookLMLayout({
             triageLevel:
               (p.triage_level as "priority_read" | "quick_browse" | "skip") ||
               "quick_browse",
-            tags: [],
-            summary: null,
-            year: null,
-            authors: null,
-            journal: null,
+            tags: (p.tags as string[]) || [],
+            summary: (p.summary as string) || null,
+            year: (p.year as number) || null,
+            authors: (p.authors as string) || null,
+            journal: (p.journal as string) || null,
           })
         );
         setPapers((prev) => {
