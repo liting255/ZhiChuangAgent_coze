@@ -3,7 +3,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronDown, FileText, Globe } from "lucide-react";
+import { ChevronDown, FileText, Globe, Download } from "lucide-react";
 import { useState } from "react";
 
 export interface SourcePaper {
@@ -36,10 +36,23 @@ interface SourceCardProps {
   paper: SourcePaper;
   selected: boolean;
   onToggle: (id: string) => void;
+  onDownload?: (id: string) => void;
 }
 
-export function SourceCard({ paper, selected, onToggle }: SourceCardProps) {
+export function SourceCard({ paper, selected, onToggle, onDownload }: SourceCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onDownload || downloading) return;
+    setDownloading(true);
+    try {
+      await onDownload(paper.id);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div
@@ -125,6 +138,16 @@ export function SourceCard({ paper, selected, onToggle }: SourceCardProps) {
             <p className="text-[10px] text-[#9AA0A6] mt-1.5">
               期刊: {paper.journal}
             </p>
+          )}
+          {paper.sourceType === "upload" && onDownload && (
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="mt-2 flex items-center gap-1 text-[10px] text-[#1a73e8] hover:text-[#1557b0] transition-colors"
+            >
+              <Download className="h-3 w-3" />
+              {downloading ? "获取下载链接..." : "下载PDF"}
+            </button>
           )}
         </div>
       )}

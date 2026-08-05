@@ -221,38 +221,54 @@ export default function NotebookLMLayout({
 
   const handleUpload = useCallback(
     async (files: FileList) => {
-      for (const file of Array.from(files)) {
-        try {
-          const formData = new FormData();
-          formData.append("file", file);
+      const fileArray = Array.from(files);
+      if (fileArray.length === 0) return;
 
-          const res = await fetch(`/api/projects/${projectId}/upload`, {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
+      // Batch upload: send all files in one request
+      const formData = new FormData();
+      fileArray.forEach((file) => {
+        formData.append("files", file);
+      });
 
-          if (data.paper) {
-            const newPaper: SourcePaper = {
-              id: data.paper.id as string,
-              title: (data.paper.title as string) || file.name,
-              abstract: (data.paper.abstract as string) || "",
-              source: file.name,
-              sourceType: "upload",
+      try {
+        const res = await fetch(`/api/projects/${projectId}/upload`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (data.papers && data.papers.length > 0) {
+          const newPapers: SourcePaper[] = data.papers.map(
+            (p: Record<string, unknown>) => ({
+              id: p.id as string,
+              title: (p.title as string) || "Untitled",
+              abstract: (p.abstract as string) || "",
+              source: (p.source as string) || "用户上传",
+              sourceType: "upload" as const,
               triageLevel: "quick_browse",
               tags: [],
-              summary: (data.paper.summary as string) || null,
-              year: (data.paper.year as number) || null,
-              authors: (data.paper.authors as string) || null,
+              summary: (p.summary as string) || null,
+              year: (p.year as number) || null,
+              authors: (p.authors as string) || null,
               journal: null,
-            };
-            setPapers((prev) => [...prev, newPaper]);
-            toast.success(`已上传: ${file.name}`);
-          }
-        } catch (err) {
-          console.error("Upload failed:", err);
-          toast.error(`上传失败: ${file.name}`);
+            })
+          );
+          setPapers((prev) => [...prev, ...newPapers]);
+          toast.success(data.summary || `成功上传 ${newPapers.length} 篇文献`);
         }
+
+        if (data.errors && data.errors.length > 0) {
+          data.errors.forEach((e: { fileName: string; error: string }) => {
+            toast.error(`${e.fileName}: ${e.error}`);
+          });
+        }
+
+        if (!data.papers && !data.errors) {
+          toast.error("上传失败，请重试");
+        }
+      } catch (err) {
+        console.error("Upload failed:", err);
+        toast.error("上传失败，请重试");
       }
     },
     [projectId]
@@ -378,6 +394,38 @@ export default function NotebookLMLayout({
     toast.info("在对话中使用 /save 指令沉淀笔记");
   }, []);
 
+  const handleDownload = useCallback(
+    async (paperId: string) => {
+      try {
+        const res = await fetch(
+          `/api/projects/${projectId}/papers/${paperId}/download`
+        );
+        const data = await res.json();
+
+        if (data.downloadUrl) {
+          // Use fetch + blob pattern for cross-origin download
+          const response = await fetch(data.downloadUrl);
+          const blob = await response.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = blobUrl;
+          link.download = data.fileName || "document.pdf";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(blobUrl);
+          toast.success("下载开始");
+        } else {
+          toast.error("获取下载链接失败");
+        }
+      } catch (err) {
+        console.error("Download failed:", err);
+        toast.error("下载失败");
+      }
+    },
+    [projectId]
+  );
+
   const selectedPaperTitles = papers
     .filter((p) => selectedIds.includes(p.id))
     .map((p) => p.title);
@@ -465,6 +513,7 @@ export default function NotebookLMLayout({
               onDeselectAll={handleDeselectAll}
               onSearch={handleSearch}
               onUpload={handleUpload}
+              onDownload={handleDownload}
               loading={searchLoading}
             />
           </div>

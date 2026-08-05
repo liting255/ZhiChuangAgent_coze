@@ -12,7 +12,8 @@
 - **UI**: shadcn/ui + Tailwind CSS 4
 - **Layout**: react-resizable-panels (三栏可拖拽)
 - **Database**: Supabase (PostgreSQL)
-- **AI**: coze-coding-dev-sdk (LLM + Web Search)
+- **Storage**: S3 对象存储 (coze-coding-dev-sdk S3Storage)
+- **AI**: coze-coding-dev-sdk (LLM + Web Search + FetchClient PDF 解析)
 
 ## 目录结构
 
@@ -43,7 +44,8 @@ src/
 │               ├── notes/route.ts    # GET/POST 研究笔记
 │               ├── notes/[noteId]/route.ts     # DELETE/PUT 笔记
 │               ├── notes/[noteId]/export/route.ts  # GET 导出笔记
-│               └── upload/route.ts   # POST 上传PDF
+│               └── upload/route.ts   # POST 批量上传PDF（S3存储 + FetchClient解析）
+│               └── papers/[paperId]/download/route.ts  # GET 生成PDF下载签名URL
 ├── components/
 │   ├── ui/                           # shadcn/ui 组件
 │   └── panels/                       # 面板组件

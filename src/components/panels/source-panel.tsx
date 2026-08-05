@@ -27,6 +27,7 @@ interface SourcePanelProps {
   onDeselectAll: () => void;
   onSearch: (query: string) => void;
   onUpload: (files: FileList) => void;
+  onDownload?: (id: string) => void;
   loading: boolean;
   className?: string;
 }
@@ -41,6 +42,7 @@ export function SourcePanel({
   onDeselectAll,
   onSearch,
   onUpload,
+  onDownload,
   loading,
   className,
 }: SourcePanelProps) {
@@ -250,6 +252,7 @@ export function SourcePanel({
                 paper={paper}
                 selected={selectedIds.includes(paper.id)}
                 onToggle={onTogglePaper}
+                onDownload={onDownload}
               />
             ))}
           </div>

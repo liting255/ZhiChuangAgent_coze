@@ -31,7 +31,7 @@ export async function GET(
     title: p.title,
     abstract: p.abstract || "",
     source: p.source || "未知来源",
-    sourceType: p.url && String(p.url).startsWith("upload://") ? "upload" : "search",
+    sourceType: p.source === "用户上传" ? "upload" : "search",
     triageLevel: p.triage_level || "quick_browse",
     triageReason: p.triage_reason || null,
     relevanceScore: p.relevance_score || 50,
