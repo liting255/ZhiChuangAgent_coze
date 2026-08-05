@@ -114,6 +114,7 @@ export default function NotebookLMLayout({
   const [papers, setPapers] = useState<SourcePaper[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   // Notes panel state
   const [notes, setNotes] = useState<NoteData[]>([]);
@@ -224,6 +225,8 @@ export default function NotebookLMLayout({
       const fileArray = Array.from(files);
       if (fileArray.length === 0) return;
 
+      setUploadLoading(true);
+
       // Batch upload: send all files in one request
       const formData = new FormData();
       fileArray.forEach((file) => {
@@ -235,6 +238,19 @@ export default function NotebookLMLayout({
           method: "POST",
           body: formData,
         });
+
+        if (!res.ok) {
+          let errorMsg = "上传失败";
+          try {
+            const errData = await res.json();
+            errorMsg = errData.error || errData.details || errorMsg;
+          } catch {
+            // response body not JSON, use default message
+          }
+          toast.error(errorMsg);
+          return;
+        }
+
         const data = await res.json();
 
         if (data.papers && data.papers.length > 0) {
@@ -262,13 +278,11 @@ export default function NotebookLMLayout({
             toast.error(`${e.fileName}: ${e.error}`);
           });
         }
-
-        if (!data.papers && !data.errors) {
-          toast.error("上传失败，请重试");
-        }
       } catch (err) {
         console.error("Upload failed:", err);
-        toast.error("上传失败，请重试");
+        toast.error("上传失败，请检查网络连接后重试");
+      } finally {
+        setUploadLoading(false);
       }
     },
     [projectId]
@@ -515,6 +529,7 @@ export default function NotebookLMLayout({
               onUpload={handleUpload}
               onDownload={handleDownload}
               loading={searchLoading}
+              uploadLoading={uploadLoading}
             />
           </div>
         )}

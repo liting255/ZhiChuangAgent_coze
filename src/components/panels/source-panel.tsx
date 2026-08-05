@@ -29,6 +29,7 @@ interface SourcePanelProps {
   onUpload: (files: FileList) => void;
   onDownload?: (id: string) => void;
   loading: boolean;
+  uploadLoading: boolean;
   className?: string;
 }
 
@@ -44,6 +45,7 @@ export function SourcePanel({
   onUpload,
   onDownload,
   loading,
+  uploadLoading,
   className,
 }: SourcePanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,9 +140,14 @@ export function SourcePanel({
             size="sm"
             className="h-7 text-[11px] rounded-lg text-[#5F6368] hover:text-[#202124] hover:bg-[#E8EAED] flex-1"
             onClick={() => fileInputRef.current?.click()}
+            disabled={uploadLoading}
           >
-            <Upload className="h-3 w-3 mr-1" />
-            上传PDF
+            {uploadLoading ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <Upload className="h-3 w-3 mr-1" />
+            )}
+            {uploadLoading ? "上传中..." : "上传PDF"}
           </Button>
           <Button
             variant="ghost"

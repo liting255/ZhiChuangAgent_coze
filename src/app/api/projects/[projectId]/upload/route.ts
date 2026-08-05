@@ -5,6 +5,9 @@ import { S3Storage, FetchClient, Config, HeaderUtils } from "coze-coding-dev-sdk
 // Maximum file size: 50MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
+// PDF parsing timeout: 15 seconds
+const PDF_PARSE_TIMEOUT = 15_000;
+
 // Sanitize filename: keep only safe chars, replace spaces with underscores
 function sanitizeFileName(name: string): string {
   return name
@@ -20,6 +23,17 @@ function extractAbstract(text: string, maxLength = 800): string {
   return text.length > maxLength
     ? text.slice(0, maxLength) + "..."
     : text;
+}
+
+// Wrap a promise with a timeout
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
 }
 
 export async function POST(
@@ -63,19 +77,29 @@ export async function POST(
       }
     }
 
-    // Initialize S3 storage
-    const storage = new S3Storage({
-      endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-      accessKey: "",
-      secretKey: "",
-      bucketName: process.env.COZE_BUCKET_NAME,
-      region: "cn-beijing",
-    });
+    // Try to initialize S3 storage (may not be available in all environments)
+    let storage: S3Storage | null = null;
+    try {
+      storage = new S3Storage({
+        endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
+        accessKey: "",
+        secretKey: "",
+        bucketName: process.env.COZE_BUCKET_NAME,
+        region: "cn-beijing",
+      });
+    } catch {
+      console.warn("S3 storage initialization failed, files will be stored as references only");
+    }
 
-    // Initialize FetchClient for PDF parsing
-    const forwardHeaders = HeaderUtils.extractForwardHeaders(request.headers);
-    const fetchConfig = new Config();
-    const fetchClient = new FetchClient(fetchConfig, forwardHeaders);
+    // Try to initialize FetchClient for PDF parsing
+    let fetchClient: FetchClient | null = null;
+    try {
+      const forwardHeaders = HeaderUtils.extractForwardHeaders(request.headers);
+      const fetchConfig = new Config();
+      fetchClient = new FetchClient(fetchConfig, forwardHeaders);
+    } catch {
+      console.warn("FetchClient initialization failed, PDF parsing will be skipped");
+    }
 
     const supabase = getSupabaseClient();
     const results: Array<{
@@ -98,68 +122,90 @@ export async function POST(
         // Read file content
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+        const fileSizeKB = (buffer.length / 1024).toFixed(1);
 
-        // Sanitize filename for S3 key
-        const safeName = sanitizeFileName(file.name);
-        const s3Key = `papers/${projectId}/${Date.now()}_${safeName}`;
-
-        // Upload to S3 object storage
-        const actualKey = await storage.uploadFile({
-          fileContent: buffer,
-          fileName: s3Key,
-          contentType: "application/pdf",
-        });
-
-        // Try to parse PDF content via FetchClient
-        let parsedAbstract = "";
-        try {
-          // Generate a presigned URL for the FetchClient to read
-          const presignedUrl = await storage.generatePresignedUrl({
-            key: actualKey,
-            expireTime: 3600, // 1 hour for parsing
-          });
-
-          const fetchResponse = await fetchClient.fetch(presignedUrl);
-
-          if (fetchResponse.status_code === 0) {
-            // Extract text content from the parsed PDF
-            const textContent = fetchResponse.content
-              .filter((item) => item.type === "text")
-              .map((item) => item.text)
-              .join("\n");
-
-            parsedAbstract = extractAbstract(textContent, 800);
+        // Upload to S3 object storage (with fallback)
+        let s3Key: string | null = null;
+        if (storage) {
+          try {
+            const safeName = sanitizeFileName(file.name);
+            const s3Path = `papers/${projectId}/${Date.now()}_${safeName}`;
+            s3Key = await withTimeout(
+              storage.uploadFile({
+                fileContent: buffer,
+                fileName: s3Path,
+                contentType: "application/pdf",
+              }),
+              30_000,
+              "S3 upload"
+            );
+          } catch (s3Err) {
+            console.error(`S3 upload failed for ${file.name}:`, s3Err);
+            s3Key = null; // Fall through to database-only storage
           }
-        } catch {
-          // PDF parsing is best-effort; fall back to file info
-          console.warn(`Failed to parse PDF content for: ${file.name}`);
+        }
+
+        // Try to parse PDF content via FetchClient (best-effort, with timeout)
+        let parsedAbstract = "";
+        if (fetchClient && s3Key) {
+          try {
+            const presignedUrl = await withTimeout(
+              storage!.generatePresignedUrl({
+                key: s3Key,
+                expireTime: 3600,
+              }),
+              10_000,
+              "Presigned URL generation"
+            );
+
+            const fetchResponse = await withTimeout(
+              fetchClient.fetch(presignedUrl),
+              PDF_PARSE_TIMEOUT,
+              "PDF parsing"
+            );
+
+            if (fetchResponse.status_code === 0 && fetchResponse.content) {
+              const textContent = fetchResponse.content
+                .filter((item) => item.type === "text")
+                .map((item) => item.text)
+                .join("\n");
+
+              parsedAbstract = extractAbstract(textContent, 800);
+            }
+          } catch (parseErr) {
+            // PDF parsing is best-effort; fall back to file info
+            console.warn(`PDF parsing skipped for ${file.name}:`, parseErr instanceof Error ? parseErr.message : parseErr);
+          }
         }
 
         const abstract =
           parsedAbstract ||
-          `上传的PDF文件: ${file.name} (${(buffer.length / 1024).toFixed(1)} KB)。点击下载查看完整内容。`;
+          `上传的PDF文件: ${file.name} (${fileSizeKB} KB)${s3Key ? "" : "（文件存储失败，仅保存记录）"}。`;
 
         // Insert paper record into database
+        // If S3 upload succeeded, store the S3 key; otherwise store a reference
+        const insertData: Record<string, unknown> = {
+          project_id: projectId,
+          title: file.name.replace(/\.pdf$/i, ""),
+          url: s3Key || `upload://${file.name}`,
+          abstract,
+          source: "用户上传",
+          triage_level: "quick_browse",
+          relevance_score: 70,
+          quality_score: 70,
+          confidence: "medium",
+          processing_status: parsedAbstract ? "processed" : (s3Key ? "pending" : "failed"),
+        };
+
         const { data, error } = await supabase
           .from("papers")
-          .insert({
-            project_id: projectId,
-            title: file.name.replace(/\.pdf$/i, ""),
-            url: actualKey, // Store the S3 object key
-            abstract,
-            source: "用户上传",
-            triage_level: "quick_browse",
-            relevance_score: 70,
-            quality_score: 70,
-            confidence: "medium",
-            processing_status: parsedAbstract ? "processed" : "pending",
-          })
+          .insert(insertData)
           .select()
           .single();
 
         if (error) {
           console.error("Upload DB error:", error);
-          errors.push({ fileName: file.name, error: "保存文献记录失败" });
+          errors.push({ fileName: file.name, error: `保存文献记录失败: ${error.message}` });
           continue;
         }
 
@@ -189,6 +235,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "所有文件上传失败",
+          details: errors.map((e) => `${e.fileName}: ${e.error}`).join("; "),
           errors,
         },
         { status: 500 }
@@ -202,6 +249,12 @@ export async function POST(
     });
   } catch (err) {
     console.error("Upload error:", err);
-    return NextResponse.json({ error: "上传处理失败" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "上传处理失败",
+        details: err instanceof Error ? err.message : "未知错误",
+      },
+      { status: 500 }
+    );
   }
 }
