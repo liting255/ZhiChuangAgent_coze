@@ -48,7 +48,6 @@ export function SourcePanel({
   uploadLoading,
   className,
 }: SourcePanelProps) {
-  console.log("SourcePanel rendered, onUpload type:", typeof onUpload, "papers count:", papers.length, "uploadLoading:", uploadLoading);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -171,10 +170,7 @@ export function SourcePanel({
             className="hidden"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
-                console.log("SourcePanel: files selected", e.target.files.length, "files:", Array.from(e.target.files).map(f => f.name).join(", "));
                 onUpload(e.target.files);
-              } else {
-                console.log("SourcePanel: file input changed but no files");
               }
               e.target.value = "";
             }}

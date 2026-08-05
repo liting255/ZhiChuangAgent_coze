@@ -222,23 +222,16 @@ export default function NotebookLMLayout({
 
   const handleUpload = useCallback(
     async (files: FileList) => {
-      console.log("handleUpload called with", files.length, "files");
       const fileArray = Array.from(files);
-      if (fileArray.length === 0) {
-        console.log("handleUpload: no files, returning");
-        return;
-      }
+      if (fileArray.length === 0) return;
 
       if (!projectId) {
-        console.error("handleUpload: projectId is undefined!");
         toast.error("项目ID无效，请刷新页面后重试");
         return;
       }
 
-      console.log("handleUpload: projectId =", projectId, "files =", fileArray.map(f => f.name).join(", "));
       setUploadLoading(true);
 
-      // Batch upload: send all files in one request
       const formData = new FormData();
       fileArray.forEach((file) => {
         formData.append("files", file);
@@ -249,7 +242,6 @@ export default function NotebookLMLayout({
           method: "POST",
           body: formData,
         });
-        console.log("handleUpload: response status =", res.status, "ok =", res.ok);
 
         if (!res.ok) {
           let errorMsg = "上传失败";
