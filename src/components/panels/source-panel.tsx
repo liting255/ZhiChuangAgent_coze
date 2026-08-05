@@ -16,6 +16,7 @@ import {
   Square,
 } from "lucide-react";
 import { SourceCard, SourcePaper } from "./source-card";
+import { SearchDialog } from "./search-dialog";
 import { cn } from "@/lib/utils";
 
 interface SourcePanelProps {
@@ -46,6 +47,7 @@ export function SourcePanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = useCallback(() => {
@@ -119,9 +121,7 @@ export function SourcePanel({
             variant="ghost"
             size="sm"
             className="h-7 text-[11px] rounded-lg text-[#5F6368] hover:text-[#202124] hover:bg-[#E8EAED] flex-1"
-            onClick={() => {
-              onSearch(searchQuery || "最新研究");
-            }}
+            onClick={() => setShowSearchDialog(true)}
             disabled={loading}
           >
             {loading ? (
@@ -235,7 +235,7 @@ export function SourcePanel({
                 variant="outline"
                 size="sm"
                 className="mt-3 h-7 text-[11px] rounded-lg"
-                onClick={() => onSearch("")}
+                onClick={() => setShowSearchDialog(true)}
               >
                 <Plus className="h-3 w-3 mr-1" />
                 开始检索
@@ -255,6 +255,14 @@ export function SourcePanel({
           </div>
         )}
       </ScrollArea>
+
+      {/* Search Dialog */}
+      <SearchDialog
+        open={showSearchDialog}
+        onOpenChange={setShowSearchDialog}
+        onSearch={onSearch}
+        loading={loading}
+      />
     </div>
   );
 }
