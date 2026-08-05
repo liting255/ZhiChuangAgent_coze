@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/storage/database/supabase-client";
 import { S3Storage, FetchClient, Config, HeaderUtils } from "coze-coding-dev-sdk";
 
-// Maximum file size: 50MB
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+// Maximum file size: 200MB
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 // PDF parsing timeout: 15 seconds
 const PDF_PARSE_TIMEOUT = 15_000;
@@ -71,7 +71,7 @@ export async function POST(
       }
       if (file.size > MAX_FILE_SIZE) {
         return NextResponse.json(
-          { error: `文件过大 (最大 50MB): ${file.name}` },
+          { error: `文件过大 (最大 200MB): ${file.name}` },
           { status: 400 }
         );
       }
